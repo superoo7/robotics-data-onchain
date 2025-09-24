@@ -1,0 +1,44 @@
+@test module;
+
+import ^^.main.{add_data, get_data, get_all_data};
+
+function test_add_telemetry_data() {
+    // Test adding telemetry data
+    val tx = rell.test.tx(add_data("sensor_001", 85.5));
+    tx.run();
+
+    // Verify data was added
+    val data = get_data("sensor_001");
+    assert_equals(data.battery, 85.5);
+}
+
+function test_multiple_sensors() {
+    // Add data for multiple sensors
+    val tx1 = rell.test.tx(add_data("sensor_001", 75.0));
+    val tx2 = rell.test.tx(add_data("sensor_002", 90.5));
+
+    tx1.run();
+    tx2.run();
+
+    // Verify both sensors have correct data
+    val data1 = get_data("sensor_001");
+    val data2 = get_data("sensor_002");
+
+    assert_equals(data1.battery, 75.0);
+    assert_equals(data2.battery, 90.5);
+}
+
+function test_get_all_data() {
+    // Clear any existing data and add fresh test data
+    val tx1 = rell.test.tx(add_data("sensor_a", 60.0));
+    val tx2 = rell.test.tx(add_data("sensor_b", 80.0));
+
+    tx1.run();
+    tx2.run();
+
+    // Get all data
+    val all_data = get_all_data();
+
+    // Should have at least our test sensors
+    assert_true(all_data.size() >= 2);
+}

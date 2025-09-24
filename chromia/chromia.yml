@@ -1,0 +1,10 @@
+blockchains:
+  chromia:
+    module: main
+compile:
+  rellVersion: 0.13.14
+database:
+  schema: schema_chromia
+test:
+  modules:
+    - test

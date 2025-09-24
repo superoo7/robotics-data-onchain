@@ -1,0 +1,26 @@
+module;
+
+function last_known_time()
+    = if (op_context.exists) op_context.last_block_time else block @ {} (@max .timestamp) ?: 0;
+
+entity telemetry {
+    key sensor_id: text;
+    mutable battery: decimal;
+    mutable timestamp: integer;
+}
+
+operation add_data(sensor_id: text, battery: decimal) {
+    create telemetry (
+        sensor_id = sensor_id,
+        battery = battery,
+        timestamp = last_known_time()
+    );
+}
+
+query get_data(sensor_id: text) {
+    return telemetry @ { .sensor_id == sensor_id } ( .battery, .timestamp );
+}
+
+query get_all_data() {
+    return telemetry @* {} ( .sensor_id, .battery, .timestamp );
+}
