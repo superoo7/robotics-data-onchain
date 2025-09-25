@@ -3,24 +3,55 @@ module;
 function last_known_time()
     = if (op_context.exists) op_context.last_block_time else block @ {} (@max .timestamp) ?: 0;
 
-entity telemetry {
-    key sensor_id: text;
-    mutable battery: decimal;
+entity sensor {
+    key name: text;
+    mutable id: integer;
     mutable timestamp: integer;
+    mutable metadata: json;
+    mutable creator: byte_array;
 }
 
-operation add_data(sensor_id: text, battery: decimal) {
-    create telemetry (
-        sensor_id = sensor_id,
-        battery = battery,
-        timestamp = last_known_time()
+entity telemetry {
+    key sensor: sensor;
+    key timestamp: integer;
+    mutable battery: decimal;
+}
+
+operation create_sensor(sensor_name: text, metadata: text) {
+    val current_time = last_known_time();
+    create sensor (
+        name = sensor_name,
+        id = current_time,
+        timestamp = current_time,
+        metadata = json(metadata),
+        creator = op_context.get_signers()[0]
     );
 }
 
-query get_data(sensor_id: text) {
-    return telemetry @ { .sensor_id == sensor_id } ( .battery, .timestamp );
+operation add_data(sensor_name: text, battery: decimal) {
+    val sensor_entity = sensor @ { .name == sensor_name };
+    val current_time = last_known_time();
+    create telemetry (
+        sensor = sensor_entity,
+        timestamp = current_time,
+        battery = battery
+    );
+}
+
+query get_sensor_count() {
+    val sensors = sensor @* { } ( .id );
+    return sensors.size();
+}
+
+query get_telemetry_count() {
+    val telemetries = telemetry @* { } ( .timestamp );
+    return telemetries.size();
+}
+
+query get_data(sensor_name: text) {
+    return telemetry @ { .sensor.name == sensor_name } ( .battery, .timestamp );
 }
 
 query get_all_data() {
-    return telemetry @* {} ( .sensor_id, .battery, .timestamp );
+    return telemetry @* { } ( .sensor.id, .sensor.name, .sensor.metadata, .sensor.creator, .battery, .timestamp );
 }
